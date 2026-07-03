@@ -2888,7 +2888,7 @@
   },
   "files": {
     "app.R": {
-      "checksum": "54ffe8ca53b1906ed573570d27864811"
+      "checksum": "3502a934f3611d5880d2896083579125"
     },
     "download": {
       "checksum": "9c1bea67a0d0dc2e42297ea696f6df4f"
@@ -2897,7 +2897,7 @@
       "checksum": "37fa9f8ffc1897aeb5e5b831b70a9b56"
     },
     "README.md": {
-      "checksum": "794a53e7c37f17dfdc2091039b695dbb"
+      "checksum": "dfa3a9d6a41eaf6d7d71276f683dac78"
     },
     "R/basemap_utils.R": {
       "checksum": "eaf442463b438fda2c56c784b5bac590"
@@ -2912,7 +2912,7 @@
       "checksum": "f686a599bf6a77e2094c43712b1a331b"
     },
     "R/map_utils.R": {
-      "checksum": "1b6b29c68b7315d58d96233ba37cc07f"
+      "checksum": "5f538ebb68e6b8bddc6f2bca3291a22e"
     },
     "R/rwgps_utils.R": {
       "checksum": "b28394b3c9c29074ce18e05749f2559f"

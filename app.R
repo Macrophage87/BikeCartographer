@@ -1,4 +1,4 @@
-# GPX Social Mapper ---------------------------------------------------
+# Bike Cartographer ---------------------------------------------------
 # Import a GPX file, style it on an interactive leaflet map, and export
 # the map as a PNG sized for common social media formats.
 #
@@ -23,9 +23,20 @@ options(shiny.maxRequestSize = 30 * 1024^2)
 app_css <- "
 html { scrollbar-gutter: stable; }
 .muted-note {
-  color: #555555;
+  color: rgba(255, 255, 255, 0.75);
   font-size: 0.85em;
   margin-top: 4px;
+}
+.well {
+  background-color: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  border-radius: 0.5rem;
+  backdrop-filter: blur(6px);
+}
+.leaflet-container { border-radius: 6px; }
+.control-label,
+.shiny-input-container label {
+  font-weight: bold;
 }
 "
 
@@ -75,13 +86,21 @@ map_scaler_js <- "
 })();
 "
 
+# Bootstrap 5 theme (bslib): the Quartz Bootswatch preset, a glassy,
+# vibrant purple look.
+app_theme <- bslib::bs_theme(
+  version = 5,
+  bootswatch = "quartz"
+)
+
 ui <- fluidPage(
-  title = "GPX Social Mapper",
+  title = "Bike Cartographer",
+  theme = app_theme,
   tags$head(
     tags$style(HTML(app_css)),
     tags$script(HTML(map_scaler_js))
   ),
-  titlePanel("GPX Social Mapper"),
+  titlePanel("Bike Cartographer"),
   sidebarLayout(
     sidebarPanel(
       width = 3,
@@ -260,7 +279,7 @@ warn_if_stadia_keyless <- function(basemap_id) {
 usage_guide_modal <- function() {
   step <- function(title, ...) tags$li(tags$strong(title), " ", ...)
   modalDialog(
-    title = "How to use GPX Social Mapper",
+    title = "How to use Bike Cartographer",
     easyClose = TRUE,
     size = "l",
     footer = modalButton("Got it"),

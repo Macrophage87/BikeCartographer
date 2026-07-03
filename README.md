@@ -1,4 +1,4 @@
-# GPX Social Mapper
+# Bike Cartographer
 
 A Shiny app that imports a GPX file, draws its tracks, routes, and
 waypoints on an interactive leaflet map, and exports the map as a PNG
