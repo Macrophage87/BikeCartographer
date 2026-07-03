@@ -71,32 +71,6 @@ waypoint_awesome_icon <- function(icon = "map-pin",
   )
 }
 
-#' Build a small non-interactive preview of a basemap
-#'
-#' Renders the selected basemap over the contiguous United States so
-#' the user can preview the tile style before applying it to the main
-#' map.
-#'
-#' @param basemap_id Character scalar. A basemap id from
-#'   [basemap_registry()]; unknown or unavailable ids fall back to
-#'   OpenStreetMap (see [add_basemap_tiles()]).
-#'
-#' @return A `leaflet` htmlwidget with all interaction disabled.
-build_basemap_preview <- function(basemap_id) {
-  opts <- leaflet::leafletOptions(
-    zoomControl = FALSE,
-    dragging = FALSE,
-    scrollWheelZoom = FALSE,
-    doubleClickZoom = FALSE,
-    touchZoom = FALSE,
-    boxZoom = FALSE,
-    keyboard = FALSE
-  )
-  map <- leaflet::leaflet(options = opts)
-  map <- add_basemap_tiles(map, basemap_id)
-  leaflet::setView(map, lng = -98.58, lat = 39.83, zoom = 3)
-}
-
 #' Build the main leaflet map for a GPX file
 #'
 #' Draws GPX tracks as solid lines, routes as dashed lines, named
@@ -114,14 +88,33 @@ build_basemap_preview <- function(basemap_id) {
 #' @param track_weight Numeric scalar. Line weight in pixels.
 #' @param waypoint_icon Character scalar. Font Awesome icon name used
 #'   for named waypoints (see [waypoint_awesome_icon()]).
+#' @param show_elevation Logical scalar. When `TRUE` and `gpx` carries
+#'   an elevation profile, an SVG profile panel is attached as a
+#'   bottom-left map control (see [elevation_profile_svg()]); custom
+#'   controls survive the PNG export, so the panel appears there too.
+#' @param elevation_scale Numeric scalar. Size multiplier for the
+#'   elevation profile panel (1 = default size).
 #'
 #' @return A `leaflet` htmlwidget.
 build_gpx_map <- function(gpx = NULL,
                           basemap_id = "OpenStreetMap.Mapnik",
                           track_color = "#E8552F",
                           track_weight = 4,
-                          waypoint_icon = "map-pin") {
-  map <- leaflet::leaflet()
+                          waypoint_icon = "map-pin",
+                          show_elevation = FALSE,
+                          elevation_scale = 1) {
+  if (is.null(elevation_scale) || !is.finite(elevation_scale)) {
+    elevation_scale <- 1
+  }
+  # zoomSnap = 0 lets fitBounds pick an exact fractional zoom instead of
+  # rounding to whole levels. Rounding is what made the interactive
+  # preview and the exported PNG frame the track differently: they are
+  # different pixel sizes, so each rounded to its own zoom. With no
+  # snapping the fit is scale-invariant, so identical aspect ratios (the
+  # preview matches the export size) produce identical framing.
+  map <- leaflet::leaflet(
+    options = leaflet::leafletOptions(zoomSnap = 0)
+  )
   map <- add_basemap_tiles(map, basemap_id)
 
   if (is.null(gpx)) {
@@ -172,6 +165,20 @@ build_gpx_map <- function(gpx = NULL,
       fillColor = "#FFFFFF",
       fillOpacity = 0.9
     )
+  }
+
+  if (isTRUE(show_elevation)) {
+    svg <- elevation_profile_svg(gpx$elevation,
+                                 line_color = track_color,
+                                 scale = elevation_scale)
+    if (!is.null(svg)) {
+      map <- leaflet::addControl(
+        map,
+        html = svg,
+        position = "bottomleft",
+        className = "elevation-profile"
+      )
+    }
   }
 
   bounds <- gpx_bounds(gpx)

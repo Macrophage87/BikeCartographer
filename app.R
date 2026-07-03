@@ -21,10 +21,7 @@ if (!exists("basemap_choices", mode = "function")) {
 options(shiny.maxRequestSize = 30 * 1024^2)
 
 app_css <- "
-#basemap_preview {
-  border: 1px solid #cfcfcf;
-  border-radius: 6px;
-}
+html { scrollbar-gutter: stable; }
 .muted-note {
   color: #555555;
   font-size: 0.85em;
@@ -32,9 +29,58 @@ app_css <- "
 }
 "
 
+# Client-side scaler: the map is rendered at the exact export pixel size
+# (see output$map_scaler_ui) so leaflet fits bounds to the true export
+# dimensions. This script shrinks that fixed-size element to fit the
+# panel with a CSS transform, which does not change the element's layout
+# size (offsetWidth/Height), so leaflet's framing is untouched. The
+# result is a pixel-faithful miniature of the exported PNG. The height is
+# also capped at a fraction of the viewport so tall formats (e.g. 9:16)
+# stay on screen; the map is centred horizontally when width-capped.
+map_scaler_js <- "
+(function() {
+  function applyScale() {
+    var frame = document.getElementById('map_frame');
+    if (!frame) { return; }
+    var scaler = frame.querySelector('#map_scaler');
+    if (!scaler) { return; }
+    var w = parseFloat(scaler.getAttribute('data-w'));
+    var h = parseFloat(scaler.getAttribute('data-h'));
+    var avail = frame.clientWidth;
+    if (!(w > 0 && h > 0 && avail > 0)) { return; }
+    var maxH = 0.82 * window.innerHeight;
+    var s = Math.min(avail / w, maxH / h);
+    var tx = Math.max(0, (avail - w * s) / 2);
+    scaler.style.transform = 'translateX(' + tx + 'px) scale(' + s + ')';
+    frame.style.height = (h * s) + 'px';
+  }
+  function init() {
+    var frame = document.getElementById('map_frame');
+    if (!frame) { setTimeout(init, 100); return; }
+    if (frame.getAttribute('data-scaler-init')) { return; }
+    frame.setAttribute('data-scaler-init', '1');
+    if (window.ResizeObserver) {
+      new ResizeObserver(applyScale).observe(frame);
+    }
+    new MutationObserver(applyScale)
+      .observe(frame, { childList: true, subtree: true });
+    window.addEventListener('resize', applyScale);
+    applyScale();
+  }
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', init);
+  } else {
+    init();
+  }
+})();
+"
+
 ui <- fluidPage(
   title = "GPX Social Mapper",
-  tags$head(tags$style(HTML(app_css))),
+  tags$head(
+    tags$style(HTML(app_css)),
+    tags$script(HTML(map_scaler_js))
+  ),
   titlePanel("GPX Social Mapper"),
   sidebarLayout(
     sidebarPanel(
@@ -50,8 +96,6 @@ ui <- fluidPage(
         choices = basemap_choices(),
         selected = "CartoDB.Positron"
       ),
-      leaflet::leafletOutput("basemap_preview", height = 130),
-      p(class = "muted-note", "Basemap preview (contiguous US)"),
       selectInput(
         "waypoint_icon",
         "Named waypoint icon",
@@ -82,6 +126,22 @@ ui <- fluidPage(
         value = 4,
         step = 1
       ),
+      checkboxInput(
+        "show_elevation",
+        "Elevation profile (map & export)",
+        value = TRUE
+      ),
+      conditionalPanel(
+        condition = "input.show_elevation",
+        sliderInput(
+          "elevation_size",
+          "Elevation profile size",
+          min = 1,
+          max = 3,
+          value = 1,
+          step = 0.25
+        )
+      ),
       hr(),
       selectInput("preset", "Export size", choices = preset_choices()),
       selectInput(
@@ -97,37 +157,103 @@ ui <- fluidPage(
     ),
     mainPanel(
       width = 9,
-      leaflet::leafletOutput("map", height = 620),
+      div(
+        id = "map_frame",
+        style = paste0(
+          "position: relative; width: 100%; overflow: hidden; ",
+          "box-sizing: border-box; border: 1px solid #cfcfcf; ",
+          "border-radius: 6px;"
+        ),
+        uiOutput("map_scaler_ui")
+      ),
       uiOutput("layer_summary")
     )
   )
 )
+
+# --- Server helpers ---------------------------------------------------
+# Top-level handlers keep server() itself thin (and comfortably under
+# the lintr cyclomatic-complexity threshold). shiny::showNotification,
+# showModal, removeModal, and withProgress all pick up the session
+# from the current reactive domain when called inside observers.
+
+#' Store imported layers in the session state
+#'
+#' @param result A GPX layer list (see [read_gpx_layers()]).
+#' @param label Character scalar. Source label for the summary line.
+#' @param layers_rv,label_rv `reactiveVal`s holding the session state.
+#'
+#' @return Invisibly, `TRUE` when stored, `FALSE` when `result` holds
+#'   no features.
+set_imported_layers <- function(result, label, layers_rv, label_rv) {
+  if (all(vapply(result, is.null, logical(1L)))) {
+    showNotification(
+      "No tracks, routes, or waypoints found in this file.",
+      type = "warning"
+    )
+    return(invisible(FALSE))
+  }
+  layers_rv(result)
+  label_rv(label)
+  invisible(TRUE)
+}
+
+#' Handle a GPX file upload
+#'
+#' @param file_info One row of `input$gpx_file` from
+#'   `shiny::fileInput()`.
+#' @param layers_rv,label_rv `reactiveVal`s holding the session state.
+#'
+#' @return Invisibly, `TRUE` on success, `FALSE` otherwise.
+handle_gpx_upload <- function(file_info, layers_rv, label_rv) {
+  result <- tryCatch(
+    read_gpx_layers(file_info$datapath),
+    error = function(e) e
+  )
+  if (inherits(result, "error")) {
+    showNotification(
+      paste("Could not read GPX file:", conditionMessage(result)),
+      type = "error"
+    )
+    return(invisible(FALSE))
+  }
+  set_imported_layers(result, file_info$name, layers_rv, label_rv)
+}
+
+#' Warn when exporting a Stadia basemap without an API key
+#'
+#' Headless Chrome sends no browser referer, so Stadia's keyless
+#' localhost mode does not apply to PNG exports.
+#'
+#' @param basemap_id Character scalar. The selected basemap id.
+#'
+#' @return Invisibly, `NULL`.
+warn_if_stadia_keyless <- function(basemap_id) {
+  if (identical(basemap_key_type(basemap_id), "stadia") &&
+        !nzchar(stadia_api_key())) {
+    showNotification(
+      paste(
+        "PNG export fetches Stadia tiles without a browser referer,",
+        "so the basemap may render blank unless STADIA_API_KEY is",
+        "set."
+      ),
+      type = "warning",
+      duration = 10
+    )
+  }
+  invisible(NULL)
+}
 
 server <- function(input, output, session) {
   for (note in hidden_basemap_notes()) {
     showNotification(note, type = "message", duration = 12)
   }
 
-  gpx_data <- reactive({
-    req(input$gpx_file)
-    result <- tryCatch(
-      read_gpx_layers(input$gpx_file$datapath),
-      error = function(e) e
-    )
-    if (inherits(result, "error")) {
-      showNotification(
-        paste("Could not read GPX file:", conditionMessage(result)),
-        type = "error"
-      )
-      return(NULL)
-    }
-    if (all(vapply(result, is.null, logical(1L)))) {
-      showNotification(
-        "No tracks, routes, or waypoints found in this GPX file.",
-        type = "warning"
-      )
-    }
-    result
+  gpx_layers <- reactiveVal(NULL)
+  gpx_label <- reactiveVal(NULL)
+
+  observeEvent(input$gpx_file, {
+    handle_gpx_upload(input$gpx_file, gpx_layers, gpx_label)
   })
 
   selected_preset <- reactive({
@@ -136,21 +262,44 @@ server <- function(input, output, session) {
   })
 
   current_map <- reactive({
-    gpx <- if (is.null(input$gpx_file)) NULL else gpx_data()
     build_gpx_map(
-      gpx = gpx,
+      gpx = gpx_layers(),
       basemap_id = input$basemap,
       track_color = input$track_color,
       track_weight = input$track_weight,
-      waypoint_icon = input$waypoint_icon
+      waypoint_icon = input$waypoint_icon,
+      show_elevation = isTRUE(input$show_elevation),
+      elevation_scale = input$elevation_size
     )
   })
 
   output$map <- leaflet::renderLeaflet(current_map())
 
-  output$basemap_preview <- leaflet::renderLeaflet(
-    build_basemap_preview(input$basemap)
-  )
+  # Render the interactive map at the EXACT export pixel size; the
+  # map_scaler_js in the UI head shrinks it to fit with a CSS transform.
+  # Because a transform does not change layout size, leaflet fits bounds
+  # to the true export dimensions, so the preview is a faithful miniature
+  # of the PNG (elevation panel and all).
+  output$map_scaler_ui <- renderUI({
+    preset <- selected_preset()
+    if (nrow(preset) == 1L) {
+      w <- preset$width
+      h <- preset$height
+    } else {
+      w <- 1600L
+      h <- 900L
+    }
+    div(
+      id = "map_scaler",
+      `data-w` = w,
+      `data-h` = h,
+      style = sprintf(
+        "width: %dpx; height: %dpx; transform-origin: top left;",
+        w, h
+      ),
+      leaflet::leafletOutput("map", width = "100%", height = "100%")
+    )
+  })
 
   output$dims_note <- renderUI({
     preset <- selected_preset()
@@ -168,14 +317,18 @@ server <- function(input, output, session) {
   })
 
   output$layer_summary <- renderUI({
-    req(input$gpx_file)
-    gpx <- gpx_data()
+    gpx <- gpx_layers()
     req(!is.null(gpx))
     counts <- count_gpx_features(gpx)
+    label <- gpx_label()
+    if (is.null(label)) {
+      label <- "Loaded"
+    }
     p(
       class = "muted-note",
       sprintf(
-        "Loaded: %d track(s), %d route(s), %d waypoint(s) (%d named).",
+        "%s: %d track(s), %d route(s), %d waypoint(s) (%d named).",
+        label,
         counts[["tracks"]],
         counts[["routes"]],
         counts[["waypoints"]],
@@ -195,18 +348,7 @@ server <- function(input, output, session) {
     content = function(file) {
       preset <- selected_preset()
       req(nrow(preset) == 1L)
-      if (identical(basemap_key_type(input$basemap), "stadia") &&
-            !nzchar(stadia_api_key())) {
-        showNotification(
-          paste(
-            "PNG export fetches Stadia tiles without a browser",
-            "referer, so the basemap may render blank unless",
-            "STADIA_API_KEY is set."
-          ),
-          type = "warning",
-          duration = 10
-        )
-      }
+      warn_if_stadia_keyless(input$basemap)
       tmp_png <- tempfile(fileext = ".png")
       on.exit(unlink(tmp_png), add = TRUE)
       withProgress(
