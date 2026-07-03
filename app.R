@@ -112,41 +112,57 @@ ui <- fluidPage(
         "GPX file",
         accept = c(".gpx", "application/gpx+xml")
       ),
-      selectInput(
-        "basemap",
-        "Basemap (nationwide US coverage)",
-        choices = basemap_choices(),
-        selected = "CartoDB.Positron"
-      ),
-      selectInput(
-        "waypoint_icon",
-        "Named waypoint icon",
-        choices = c(
-          "Map pin" = "map-pin",
-          "Flag" = "flag",
-          "Star" = "star",
-          "Camera" = "camera",
-          "Bicycle" = "bicycle"
+      fluidRow(
+        column(
+          6,
+          selectInput(
+            "basemap",
+            "Basemap",
+            choices = basemap_choices(),
+            selected = "CartoDB.Positron"
+          )
+        ),
+        column(
+          6,
+          selectInput(
+            "waypoint_icon",
+            "Waypoint icon",
+            choices = c(
+              "Map pin" = "map-pin",
+              "Flag" = "flag",
+              "Star" = "star",
+              "Camera" = "camera",
+              "Bicycle" = "bicycle"
+            )
+          )
         )
       ),
-      selectInput(
-        "track_color",
-        "Track colour",
-        choices = c(
-          "Sunset orange" = "#E8552F",
-          "Deep blue" = "#2C7FB8",
-          "Forest green" = "#1B9E77",
-          "Plum" = "#7B3294",
-          "Charcoal" = "#252525"
+      fluidRow(
+        column(
+          6,
+          selectInput(
+            "track_color",
+            "Track colour",
+            choices = c(
+              "Sunset orange" = "#E8552F",
+              "Deep blue" = "#2C7FB8",
+              "Forest green" = "#1B9E77",
+              "Plum" = "#7B3294",
+              "Charcoal" = "#252525"
+            )
+          )
+        ),
+        column(
+          6,
+          sliderInput(
+            "track_weight",
+            "Track weight (px)",
+            min = 1,
+            max = 10,
+            value = 4,
+            step = 1
+          )
         )
-      ),
-      sliderInput(
-        "track_weight",
-        "Track weight (px)",
-        min = 1,
-        max = 10,
-        value = 4,
-        step = 1
       ),
       checkboxInput(
         "show_elevation",
@@ -165,13 +181,21 @@ ui <- fluidPage(
         )
       ),
       hr(),
-      selectInput("preset", "Export size", choices = preset_choices()),
-      selectInput(
-        "density",
-        "Pixel density",
-        choices = c(
-          "1x (exact platform size)" = "1",
-          "2x (retina)" = "2"
+      fluidRow(
+        column(
+          6,
+          selectInput("preset", "Export size", choices = preset_choices())
+        ),
+        column(
+          6,
+          selectInput(
+            "density",
+            "Pixel density",
+            choices = c(
+              "1x (exact platform size)" = "1",
+              "2x (retina)" = "2"
+            )
+          )
         )
       ),
       uiOutput("dims_note"),
