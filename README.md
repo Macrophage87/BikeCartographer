@@ -1,8 +1,8 @@
-# GPX Social Mapper
+# Bike Cartographer
 
 A Shiny app that imports a GPX file, draws its tracks, routes, and
 waypoints on an interactive leaflet map, and exports the map as a PNG
-sized for common social media formats using `mapview::mapshot2()`.
+sized for common social media formats using `webshot2::webshot()`.
 
 Features:
 
@@ -22,16 +22,19 @@ Features:
 ## Requirements
 
 ```r
-install.packages(c("shiny", "leaflet", "sf", "mapview", "webshot2"))
+install.packages(c(
+  "shiny", "leaflet", "leaflet.providers", "sf",
+  "webshot2", "htmlwidgets"
+))
 ```
 
-PNG export renders the map in headless Chrome via `{chromote}` (pulled
-in by `{webshot2}`). A local Chrome/Chromium install is required; on a
-headless server, install `chromium` and, if needed, point to it with
-`Sys.setenv(CHROMOTE_CHROME = "/usr/bin/chromium")`. On mapview
-installations older than 2.11 (no `mapshot2()`), the export helper
-falls back to the legacy `mapshot()`, which needs PhantomJS
-(`webshot::install_phantomjs()`); upgrading mapview is recommended.
+PNG export writes the map to a self-contained HTML file with
+`{htmlwidgets}` and captures it in headless Chrome via `{webshot2}`
+(which pulls in `{chromote}`). A local Chrome/Chromium install is
+required; on a headless server, install `chromium` and, if needed,
+point to it with `Sys.setenv(CHROMOTE_CHROME = "/usr/bin/chromium")`.
+`{sf}` needs the system GDAL/GEOS/PROJ libraries; these are already
+present in the Posit Connect Cloud build environment.
 
 ## Run
 
@@ -84,7 +87,7 @@ app.R                 UI + server (thin; logic lives in R/)
 R/gpx_utils.R         GPX reading, waypoint splitting, bounds
 R/basemap_utils.R     Basemap registry, API keys, error-safe tiles
 R/map_utils.R         Export presets, icons, map builders
-R/export_utils.R      mapshot2/mapshot PNG export wrapper
+R/export_utils.R      webshot2 + htmlwidgets PNG export wrapper
 manifest.json         Posit Connect deployment manifest
 generate_manifest.R   Regenerates manifest.json locally
 .lintr                lintr configuration
@@ -102,17 +105,38 @@ device pixels for a retina-sharp image with identical framing. Tile
 attribution is intentionally kept in exports, as most providers require
 it.
 
-## manifest.json
+## Deploying to Posit Connect Cloud (manifest.json)
 
-The included `manifest.json` is a valid skeleton: the `files` section
-carries real MD5 checksums for this snapshot of the code, and the
-`packages` section lists the direct dependencies. Before deploying to
-Posit Connect, regenerate it against your own library so versions,
-transitive dependencies, and checksums match your environment:
+Connect Cloud installs **exactly** the packages listed in
+`manifest.json` and does **not** resolve transitive dependencies
+itself. The manifest must therefore contain the *complete recursive
+dependency closure* with mutually compatible versions — listing only
+the direct dependencies causes installs to fail with errors like
+`dependencies 'callr', 'chromote', ... are not available for package
+'webshot2'`.
 
-```sh
-Rscript generate_manifest.R
-```
+The `manifest.json` checked into this repo is a **stub** (correct
+structure and file checksums, direct dependencies only). It will not
+deploy as-is. Regenerate it against a real library before deploying:
+
+1. Open this project in a Posit Cloud RStudio session (or any R
+   environment that can install from CRAN/PPM).
+2. From the project root, run:
+
+   ```r
+   source("generate_manifest.R")
+   ```
+
+   This installs the direct dependencies if needed and calls
+   `rsconnect::writeManifest()`, which walks the full dependency tree
+   and writes a complete, version-pinned `manifest.json`.
+3. Commit and push the regenerated `manifest.json`, then redeploy.
+   Connect Cloud pulls the manifest from the Git repo, so the
+   regenerated file must be committed for the deploy to pick it up.
+
+An `renv.lock` produced by `renv::snapshot()` is an equally valid
+alternative to `manifest.json` for Connect Cloud, if you prefer an
+renv-based workflow.
 
 ## Linting
 
