@@ -28,15 +28,18 @@ ensure_gpx_extension <- function(path) {
 #' Read the vector layers of a GPX file
 #'
 #' Reads the `tracks`, `routes`, and `waypoints` layers of a GPX file,
-#' silently skipping layers that are absent or empty. Z/M dimensions
-#' (elevation) are dropped from geometries so downstream leaflet calls
-#' receive plain 2D coordinates.
+#' silently skipping layers that are absent or empty, and derives an
+#' elevation profile from the `track_points` (or `route_points`)
+#' layer's `ele` field when available. Z/M dimensions are dropped from
+#' geometries so downstream leaflet calls receive plain 2D
+#' coordinates.
 #'
 #' @param path Character scalar. Path to a GPX file.
 #'
 #' @return A named list with elements `tracks`, `routes`, and
-#'   `waypoints`. Each element is an `sf` object in EPSG:4326, or
-#'   `NULL` when that layer is missing or empty.
+#'   `waypoints` (each an `sf` object in EPSG:4326 or `NULL`), plus
+#'   `elevation` (a `distance_m`/`elevation_m` data frame from
+#'   [gpx_points_to_profile()], or `NULL`).
 read_gpx_layers <- function(path) {
   path <- ensure_gpx_extension(path)
   available <- tryCatch(
@@ -56,10 +59,15 @@ read_gpx_layers <- function(path) {
     }
     sf::st_zm(out, drop = TRUE, what = "ZM")
   }
+  points <- read_one("track_points")
+  if (is.null(points)) {
+    points <- read_one("route_points")
+  }
   list(
     tracks = read_one("tracks"),
     routes = read_one("routes"),
-    waypoints = read_one("waypoints")
+    waypoints = read_one("waypoints"),
+    elevation = gpx_points_to_profile(points)
   )
 }
 
@@ -113,6 +121,75 @@ count_gpx_features <- function(gpx) {
     routes = n_rows(gpx$routes),
     waypoints = n_rows(gpx$waypoints),
     named_waypoints = n_rows(named)
+  )
+}
+
+#' Cumulative haversine distance along a coordinate sequence
+#'
+#' @param lon,lat Numeric vectors of equal length, in degrees
+#'   (EPSG:4326).
+#'
+#' @return Numeric vector of cumulative metres, starting at 0.
+cumulative_distance_m <- function(lon, lat) {
+  n <- length(lon)
+  if (n < 2L) {
+    return(rep(0, n))
+  }
+  to_rad <- pi / 180
+  lon_r <- lon * to_rad
+  lat_r <- lat * to_rad
+  dlat <- diff(lat_r)
+  dlon <- diff(lon_r)
+  a <- sin(dlat / 2)^2 +
+    cos(lat_r[-n]) * cos(lat_r[-1L]) * sin(dlon / 2)^2
+  segment <- 2 * 6371008.8 * asin(pmin(1, sqrt(a)))
+  c(0, cumsum(segment))
+}
+
+#' Lightly smooth a numeric series with a centred moving average
+#'
+#' Used on elevations so GPS noise does not produce a jagged profile
+#' or inflate climb totals. Edge positions (where the window is
+#' incomplete) keep their original values.
+#'
+#' @param x Numeric vector.
+#' @param k Integer scalar window width.
+#'
+#' @return Numeric vector the same length as `x`.
+smooth_series <- function(x, k = 5L) {
+  if (length(x) < k || k < 2L) {
+    return(x)
+  }
+  smoothed <- as.numeric(stats::filter(x, rep(1 / k, k), sides = 2))
+  ifelse(is.na(smoothed), x, smoothed)
+}
+
+#' Build an elevation profile from GPX point features
+#'
+#' Uses the `ele` field of the `track_points` (or `route_points`)
+#' layer, with distance accumulated by haversine along the points.
+#' Multi-segment tracks are concatenated in file order, so distances
+#' bridge any gaps between segments.
+#'
+#' @param points An `sf` POINT object with an `ele` column, or `NULL`.
+#'
+#' @return A data frame with `distance_m` and `elevation_m`, or
+#'   `NULL` when elevations are absent or unusable.
+gpx_points_to_profile <- function(points) {
+  if (is.null(points) || !"ele" %in% names(points)) {
+    return(NULL)
+  }
+  ele <- suppressWarnings(as.numeric(points$ele))
+  coords <- sf::st_coordinates(points)
+  ok <- !is.na(ele) &
+    stats::complete.cases(coords[, c("X", "Y"), drop = FALSE])
+  if (sum(ok) < 2L) {
+    return(NULL)
+  }
+  coords <- coords[ok, , drop = FALSE]
+  data.frame(
+    distance_m = cumulative_distance_m(coords[, "X"], coords[, "Y"]),
+    elevation_m = ele[ok]
   )
 }
 

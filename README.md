@@ -1,4 +1,4 @@
-# Bike Cartographer
+# GPX Social Mapper
 
 A Shiny app that imports a GPX file, draws its tracks, routes, and
 waypoints on an interactive leaflet map, and exports the map as a PNG
@@ -24,7 +24,7 @@ Features:
 ```r
 install.packages(c(
   "shiny", "leaflet", "leaflet.providers", "sf",
-  "webshot2", "htmlwidgets"
+  "webshot2", "htmlwidgets", "jsonlite"
 ))
 ```
 
@@ -41,6 +41,64 @@ present in the Posit Connect Cloud build environment.
 ```r
 shiny::runApp()
 ```
+
+- Import from a GPX upload **or directly from your Ride with GPS
+  library** (routes and recorded rides), with route POIs arriving as
+  named waypoints.
+- Optional elevation profile panel (distance, total climb, and
+  elevation range) drawn on the map itself, so it appears in both the
+  interactive view and the exported PNG.
+
+## Elevation profile
+
+When **Elevation profile (map & export)** is ticked and the loaded data
+carries elevations, a compact panel is attached to the bottom-left of
+the map showing the profile in the track colour plus a summary line
+(miles, total climb, and elevation range in feet). It is implemented as
+a hand-built inline SVG added with `leaflet::addControl()` -- no
+plotting packages, so the dependency manifest is unchanged -- and
+because it is part of the map widget it is captured in PNG exports
+(the export CSS hides only the zoom/layers controls).
+
+Elevation sources: for GPX uploads, the `ele` field of the
+`track_points` (or `route_points`) layer, with distance accumulated by
+haversine; for Ride with GPS imports, the API's per-point `e`
+elevation and cumulative `d` distance (haversine fallback when `d` is
+absent). Elevations are lightly smoothed before the climb total is
+computed so GPS noise does not inflate it. Files without elevation
+data simply omit the panel.
+
+## Ride with GPS import
+
+An **Import from Ride with GPS** button in the sidebar opens a modal
+dialog. With `RWGPS_API_KEY` and `RWGPS_AUTH_TOKEN` set, the modal
+lists the 100 most recently updated routes and rides in your library
+(fetched automatically on first open, with a refresh action); pick one
+and import it to the map. Without credentials, the same modal shows
+the setup steps below instead, so the feature stays discoverable. Planned routes draw dashed; recorded rides draw solid; route
+POIs become named-waypoint icon markers. (Nice side effect: the
+website's own GPX exporter omits POIs unless a checkbox is ticked,
+while the API detail used here always includes them.)
+
+Getting credentials — your password never touches this app:
+
+1. In your Ride with GPS account settings, open the **Developers**
+   tab and create an API client; copy its **API key**.
+2. On that API client's management page, click **Create new Auth
+   Token** and copy the token.
+3. Set `RWGPS_API_KEY` and `RWGPS_AUTH_TOKEN` (Posit Connect: content
+   Settings > Vars; locally: `~/.Renviron`).
+
+Implementation notes: uses the documented v1 JSON API
+(`/api/v1/routes.json`, `/api/v1/trips.json`, and the per-item detail
+endpoints) with HTTP Basic authentication (API key as username, auth
+token as password). Track points are converted directly to `sf`
+geometry — no GPX intermediate — and flow through the exact same layer
+structure as an uploaded file. Only items owned by the authenticated
+account are listed. Very long rides are thinned to at most ~20,000
+points for browser and export performance. Error-safe throughout: any
+listing or import failure notifies and leaves the app (and the modal)
+running.
 
 ## Thunderforest and Stadia basemaps (API keys)
 
@@ -85,8 +143,10 @@ Error-safe behavior when a map is unavailable:
 ```
 app.R                 UI + server (thin; logic lives in R/)
 R/gpx_utils.R         GPX reading, waypoint splitting, bounds
+R/elevation_utils.R   Elevation profile SVG panel
 R/basemap_utils.R     Basemap registry, API keys, error-safe tiles
 R/map_utils.R         Export presets, icons, map builders
+R/rwgps_utils.R       Ride with GPS API client and converters
 R/export_utils.R      webshot2 + htmlwidgets PNG export wrapper
 manifest.json         Posit Connect deployment manifest
 generate_manifest.R   Regenerates manifest.json locally
