@@ -23,15 +23,15 @@ options(shiny.maxRequestSize = 30 * 1024^2)
 app_css <- "
 html { scrollbar-gutter: stable; }
 .muted-note {
-  color: #555555;
+  color: rgba(255, 255, 255, 0.75);
   font-size: 0.85em;
   margin-top: 4px;
 }
 .well {
-  background-color: #f8f9fa;
-  border: 1px solid #e3e6ea;
+  background-color: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.18);
   border-radius: 0.5rem;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
+  backdrop-filter: blur(6px);
 }
 .leaflet-container { border-radius: 6px; }
 "
@@ -82,13 +82,11 @@ map_scaler_js <- "
 })();
 "
 
-# Bootstrap 5 theme (bslib). Accent colours mirror the map's track
-# palette so the UI and the exported maps feel like one product.
+# Bootstrap 5 theme (bslib): the Quartz Bootswatch preset, a glassy,
+# vibrant purple look.
 app_theme <- bslib::bs_theme(
   version = 5,
-  primary = "#E8552F",
-  secondary = "#2C7FB8",
-  success = "#1B9E77"
+  bootswatch = "quartz"
 )
 
 ui <- fluidPage(
