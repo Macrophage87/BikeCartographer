@@ -6,6 +6,38 @@
 # webshot) that is unnecessary here and slows and destabilises
 # deployment installs.
 
+#' Configure headless Chrome for a server / container
+#'
+#' On a hosted Linux runtime (Posit Cloud, Connect Cloud, Docker) Chrome
+#' runs as root and must be launched with `--no-sandbox`, and it must not
+#' rely on the small default `/dev/shm` (`--disable-dev-shm-usage`), or it
+#' exits before [webshot2::webshot()] can capture the page. These flags
+#' are harmless on a desktop. Safe to call repeatedly; a no-op if
+#' {chromote} is unavailable.
+#'
+#' @return Invisibly, `TRUE` when args were applied, else `FALSE`.
+configure_headless_chrome <- function() {
+  if (!requireNamespace("chromote", quietly = TRUE)) {
+    return(invisible(FALSE))
+  }
+  extra <- c("--no-sandbox", "--disable-dev-shm-usage", "--disable-gpu")
+  ns <- asNamespace("chromote")
+  if (exists("set_chrome_args", ns) && exists("get_chrome_args", ns)) {
+    current <- tryCatch(chromote::get_chrome_args(),
+                        error = function(e) character(0L))
+    tryCatch(
+      chromote::set_chrome_args(unique(c(current, extra))),
+      error = function(e) NULL
+    )
+  } else {
+    prev <- Sys.getenv("CHROMOTE_CHROME_ARGS")
+    Sys.setenv(
+      CHROMOTE_CHROME_ARGS = trimws(paste(prev, paste(extra, collapse = " ")))
+    )
+  }
+  invisible(TRUE)
+}
+
 #' Export a leaflet map to a PNG at exact pixel dimensions
 #'
 #' Writes `map` to a self-contained HTML file and renders it in a
@@ -30,6 +62,20 @@
 export_map_png <- function(map, file, width, height,
                            zoom = 1, delay = 2) {
   stopifnot(grepl("\\.png$", file, ignore.case = TRUE))
+
+  # Make headless Chrome launchable on a hosted container before capture.
+  configure_headless_chrome()
+  if (exists("find_chrome", asNamespace("chromote"))) {
+    chrome_bin <- tryCatch(chromote::find_chrome(), error = function(e) "")
+    if (is.null(chrome_bin) || !nzchar(chrome_bin)) {
+      stop(
+        "No Chrome/Chromium found for PNG export. webshot2 needs a Chrome ",
+        "binary on the host: install Chromium, or set the CHROMOTE_CHROME ",
+        "environment variable to the browser's path.",
+        call. = FALSE
+      )
+    }
+  }
 
   # Hide interactive controls for a clean frame; keep attribution.
   hide_css <- htmltools::tags$style(

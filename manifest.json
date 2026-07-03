@@ -2888,7 +2888,7 @@
   },
   "files": {
     "app.R": {
-      "checksum": "630220f8cd4ff04d7aa8122f1eed0c57"
+      "checksum": "4864293372f6357a4e28453406a6051a"
     },
     "download": {
       "checksum": "9c1bea67a0d0dc2e42297ea696f6df4f"
@@ -2906,7 +2906,7 @@
       "checksum": "dff84f383e4866eaeb60666367b1456e"
     },
     "R/export_utils.R": {
-      "checksum": "cc0ef4124d2b1601fde9d3f82c2d9ef3"
+      "checksum": "1679bd8460dc81afc2072dc756efe583"
     },
     "R/gpx_utils.R": {
       "checksum": "91e6db52ff7371abd5cac2d212e5f816"

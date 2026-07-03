@@ -351,20 +351,35 @@ server <- function(input, output, session) {
       warn_if_stadia_keyless(input$basemap)
       tmp_png <- tempfile(fileext = ".png")
       on.exit(unlink(tmp_png), add = TRUE)
-      withProgress(
-        message = "Rendering PNG in headless Chrome...",
-        value = 0.4,
+      ok <- tryCatch(
         {
-          export_map_png(
-            map = current_map(),
-            file = tmp_png,
-            width = preset$width,
-            height = preset$height,
-            zoom = as.integer(input$density)
+          withProgress(
+            message = "Rendering PNG in headless Chrome...",
+            value = 0.4,
+            {
+              export_map_png(
+                map = current_map(),
+                file = tmp_png,
+                width = preset$width,
+                height = preset$height,
+                zoom = as.integer(input$density)
+              )
+            }
           )
+          TRUE
+        },
+        error = function(e) {
+          showNotification(
+            paste("PNG export failed:", conditionMessage(e)),
+            type = "error",
+            duration = NULL
+          )
+          FALSE
         }
       )
-      file.copy(tmp_png, file, overwrite = TRUE)
+      if (isTRUE(ok) && file.exists(tmp_png)) {
+        file.copy(tmp_png, file, overwrite = TRUE)
+      }
     }
   )
 }
