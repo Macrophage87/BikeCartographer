@@ -28,8 +28,8 @@ html { scrollbar-gutter: stable; }
   margin-top: 4px;
 }
 .well {
-  background-color: #f8f9fa;
-  border: 1px solid #e3e6ea;
+  background-color: #f6f4fb;
+  border: 1px solid #e4ddf3;
   border-radius: 0.5rem;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
 }
@@ -86,11 +86,11 @@ map_scaler_js <- "
 })();
 "
 
-# Bootstrap 5 theme (bslib): a clean, light default with a single brand
-# accent (the sunset-orange track colour). Deliberately minimal.
+# Bootstrap 5 theme (bslib): a clean, light default with a purple accent.
+# Deliberately minimal - no dark background or glass effects.
 app_theme <- bslib::bs_theme(
   version = 5,
-  primary = "#E8552F"
+  primary = "#6f42c1"
 )
 
 ui <- fluidPage(
