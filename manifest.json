@@ -16,14 +16,14 @@
     ]
   },
   "packages": {
-    "htmltools": {
+    "shiny": {
       "Source": "CRAN",
       "Repository": "https://cran.rstudio.com",
       "description": {
-        "Package": "htmltools",
-        "Version": "0.5.8.1",
-        "Title": "Tools for HTML",
-        "License": "GPL (>= 2)"
+        "Package": "shiny",
+        "Version": "1.10.0",
+        "Title": "Web Application Framework for R",
+        "License": "GPL-3"
       }
     },
     "leaflet": {
@@ -46,16 +46,6 @@
         "License": "BSD_2_clause + file LICENSE"
       }
     },
-    "mapview": {
-      "Source": "CRAN",
-      "Repository": "https://cran.rstudio.com",
-      "description": {
-        "Package": "mapview",
-        "Version": "2.11.2",
-        "Title": "Interactive Viewing of Spatial Data in R",
-        "License": "GPL (>= 3)"
-      }
-    },
     "sf": {
       "Source": "CRAN",
       "Repository": "https://cran.rstudio.com",
@@ -64,16 +54,6 @@
         "Version": "1.0-19",
         "Title": "Simple Features for R",
         "License": "GPL-2 | MIT + file LICENSE"
-      }
-    },
-    "shiny": {
-      "Source": "CRAN",
-      "Repository": "https://cran.rstudio.com",
-      "description": {
-        "Package": "shiny",
-        "Version": "1.10.0",
-        "Title": "Web Application Framework for R",
-        "License": "GPL-3"
       }
     },
     "webshot2": {
@@ -85,6 +65,26 @@
         "Title": "Take Screenshots of Web Pages",
         "License": "GPL-2"
       }
+    },
+    "htmlwidgets": {
+      "Source": "CRAN",
+      "Repository": "https://cran.rstudio.com",
+      "description": {
+        "Package": "htmlwidgets",
+        "Version": "1.6.4",
+        "Title": "HTML Widgets for R",
+        "License": "MIT + file LICENSE"
+      }
+    },
+    "htmltools": {
+      "Source": "CRAN",
+      "Repository": "https://cran.rstudio.com",
+      "description": {
+        "Package": "htmltools",
+        "Version": "0.5.8.1",
+        "Title": "Tools for HTML",
+        "License": "GPL (>= 2)"
+      }
     }
   },
   "files": {
@@ -95,7 +95,7 @@
       "checksum": "4b44d36c962b9994a5ad1470a12cf833"
     },
     "R/export_utils.R": {
-      "checksum": "38dda921bf6353d64e4d8c6b1dec8d39"
+      "checksum": "03860134300b80fbea81e92ec36d64d3"
     },
     "R/gpx_utils.R": {
       "checksum": "bae585700251d026c38e000abd7a2795"
@@ -104,13 +104,13 @@
       "checksum": "238b4e761ee2aedcd321e429a5cc0309"
     },
     "README.md": {
-      "checksum": "7de2f5377242ce79a6cf1d5232e654a4"
+      "checksum": "a2f64937c2ee152507571c1c3a2e7cf2"
     },
     "app.R": {
       "checksum": "5227dc7ca793fea54d6fb55214a6452b"
     },
     "generate_manifest.R": {
-      "checksum": "92785f9df7f302c1d282ef9effae1907"
+      "checksum": "169353e1c90fe75ed1e1506270739854"
     }
   }
 }
