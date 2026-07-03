@@ -111,14 +111,14 @@ basemap_registry <- function() {
   )
 
   tf_variants <- c(
-    "cycle", "outdoors", "landscape", "transport", "atlas"
+    "cycle", "outdoors", "landscape", "transport", "atlas", "spinal-map"
   )
   thunderforest <- new_basemap(
     id = paste0("tf_", tf_variants),
     label = c(
       "Thunderforest OpenCycleMap", "Thunderforest Outdoors",
       "Thunderforest Landscape", "Thunderforest Transport",
-      "Thunderforest Atlas"
+      "Thunderforest Atlas", "Thunderforest Spinal Map"
     ),
     group = "Thunderforest (API key)",
     type = "xyz",
