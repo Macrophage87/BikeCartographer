@@ -23,15 +23,15 @@ options(shiny.maxRequestSize = 30 * 1024^2)
 app_css <- "
 html { scrollbar-gutter: stable; }
 .muted-note {
-  color: rgba(255, 255, 255, 0.75);
+  color: #555555;
   font-size: 0.85em;
   margin-top: 4px;
 }
 .well {
-  background-color: rgba(255, 255, 255, 0.08);
-  border: 1px solid rgba(255, 255, 255, 0.18);
+  background-color: #f8f9fa;
+  border: 1px solid #e3e6ea;
   border-radius: 0.5rem;
-  backdrop-filter: blur(6px);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
 }
 .leaflet-container { border-radius: 6px; }
 .control-label,
@@ -86,11 +86,11 @@ map_scaler_js <- "
 })();
 "
 
-# Bootstrap 5 theme (bslib): the Quartz Bootswatch preset, a glassy,
-# vibrant purple look.
+# Bootstrap 5 theme (bslib): a clean, light default with a single brand
+# accent (the sunset-orange track colour). Deliberately minimal.
 app_theme <- bslib::bs_theme(
   version = 5,
-  bootswatch = "quartz"
+  primary = "#E8552F"
 )
 
 ui <- fluidPage(
