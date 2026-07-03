@@ -86,10 +86,11 @@ map_scaler_js <- "
 })();
 "
 
-# Bootstrap 5 theme (bslib): a clean, light default with a purple accent.
-# Deliberately minimal - no dark background or glass effects.
+# Bootstrap 5 theme (bslib): the Cosmo Bootswatch preset (clean, flat,
+# light) with a purple accent.
 app_theme <- bslib::bs_theme(
   version = 5,
+  bootswatch = "cosmo",
   primary = "#6f42c1"
 )
 
