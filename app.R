@@ -1,4 +1,4 @@
-# GPX Social Mapper ---------------------------------------------------
+# Bike Cartographer ---------------------------------------------------
 # Import a GPX file, style it on an interactive leaflet map, and export
 # the map as a PNG sized for common social media formats.
 #
@@ -90,13 +90,13 @@ app_theme <- bslib::bs_theme(
 )
 
 ui <- fluidPage(
-  title = "GPX Social Mapper",
+  title = "Bike Cartographer",
   theme = app_theme,
   tags$head(
     tags$style(HTML(app_css)),
     tags$script(HTML(map_scaler_js))
   ),
-  titlePanel("GPX Social Mapper"),
+  titlePanel("Bike Cartographer"),
   sidebarLayout(
     sidebarPanel(
       width = 3,
@@ -299,7 +299,7 @@ warn_if_stadia_keyless <- function(basemap_id) {
 usage_guide_modal <- function() {
   step <- function(title, ...) tags$li(tags$strong(title), " ", ...)
   modalDialog(
-    title = "How to use GPX Social Mapper",
+    title = "How to use Bike Cartographer",
     easyClose = TRUE,
     size = "l",
     footer = modalButton("Got it"),
