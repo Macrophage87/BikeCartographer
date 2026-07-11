@@ -94,6 +94,10 @@ waypoint_awesome_icon <- function(icon = "map-pin",
 #'   controls survive the PNG export, so the panel appears there too.
 #' @param elevation_scale Numeric scalar. Size multiplier for the
 #'   elevation profile panel (1 = default size).
+#' @param view Optional named list `list(lng, lat, zoom)`. When supplied
+#'   (all finite), the map opens at this exact centre and zoom instead of
+#'   auto-fitting the track bounds — used to reproduce the user's
+#'   current interactive view in the export.
 #'
 #' @return A `leaflet` htmlwidget.
 build_gpx_map <- function(gpx = NULL,
@@ -102,7 +106,8 @@ build_gpx_map <- function(gpx = NULL,
                           track_weight = 4,
                           waypoint_icon = "map-pin",
                           show_elevation = FALSE,
-                          elevation_scale = 1) {
+                          elevation_scale = 1,
+                          view = NULL) {
   if (is.null(elevation_scale) || !is.finite(elevation_scale)) {
     elevation_scale <- 1
   }
@@ -179,6 +184,18 @@ build_gpx_map <- function(gpx = NULL,
         className = "elevation-profile"
       )
     }
+  }
+
+  if (!is.null(view) &&
+        all(c("lng", "lat", "zoom") %in% names(view)) &&
+        all(vapply(
+          view[c("lng", "lat", "zoom")],
+          function(v) is.numeric(v) && length(v) == 1L && is.finite(v),
+          logical(1L)
+        ))) {
+    return(leaflet::setView(
+      map, lng = view$lng, lat = view$lat, zoom = view$zoom
+    ))
   }
 
   bounds <- gpx_bounds(gpx)

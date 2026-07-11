@@ -2888,7 +2888,7 @@
   },
   "files": {
     "app.R": {
-      "checksum": "4864293372f6357a4e28453406a6051a"
+      "checksum": "10820ade65390441196e3cd7c41be862"
     },
     "download": {
       "checksum": "9c1bea67a0d0dc2e42297ea696f6df4f"
@@ -2897,7 +2897,7 @@
       "checksum": "37fa9f8ffc1897aeb5e5b831b70a9b56"
     },
     "README.md": {
-      "checksum": "6579dbcb51395279a46ecdde0cb4c414"
+      "checksum": "794a53e7c37f17dfdc2091039b695dbb"
     },
     "R/basemap_utils.R": {
       "checksum": "8bf21bc36eb14c72f283b53555939063"
@@ -2909,13 +2909,13 @@
       "checksum": "1679bd8460dc81afc2072dc756efe583"
     },
     "R/gpx_utils.R": {
-      "checksum": "91e6db52ff7371abd5cac2d212e5f816"
+      "checksum": "f686a599bf6a77e2094c43712b1a331b"
     },
     "R/map_utils.R": {
-      "checksum": "1b6b29c68b7315d58d96233ba37cc07f"
+      "checksum": "2c6ea58f13242ac4abd285f73e716de0"
     },
     "R/rwgps_utils.R": {
-      "checksum": "9b944ffd237e25dacccc95dfdf7befd9"
+      "checksum": "b28394b3c9c29074ce18e05749f2559f"
     }
   },
   "users": null
