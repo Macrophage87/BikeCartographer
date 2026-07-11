@@ -451,6 +451,27 @@ server <- function(input, output, session) {
       warn_if_stadia_keyless(input$basemap)
       tmp_png <- tempfile(fileext = ".png")
       on.exit(unlink(tmp_png), add = TRUE)
+      # Reproduce the user's current pan/zoom in the export. The
+      # interactive map is rendered at the export pixel size, so its
+      # centre and zoom transfer exactly; fall back to auto-fit if the
+      # map has not reported a view yet.
+      export_view <- NULL
+      ctr <- input$map_center
+      if (!is.null(ctr) && !is.null(input$map_zoom)) {
+        export_view <- list(
+          lng = ctr$lng, lat = ctr$lat, zoom = input$map_zoom
+        )
+      }
+      export_map <- build_gpx_map(
+        gpx = gpx_layers(),
+        basemap_id = input$basemap,
+        track_color = input$track_color,
+        track_weight = input$track_weight,
+        waypoint_icon = input$waypoint_icon,
+        show_elevation = isTRUE(input$show_elevation),
+        elevation_scale = input$elevation_size,
+        view = export_view
+      )
       ok <- tryCatch(
         {
           withProgress(
@@ -458,7 +479,7 @@ server <- function(input, output, session) {
             value = 0.4,
             {
               export_map_png(
-                map = current_map(),
+                map = export_map,
                 file = tmp_png,
                 width = preset$width,
                 height = preset$height,

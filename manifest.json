@@ -2888,7 +2888,7 @@
   },
   "files": {
     "app.R": {
-      "checksum": "60904377057763817499b5332f8b88b2"
+      "checksum": "08e3d17aaaf0f95bba9755ae7067a5c5"
     },
     "download": {
       "checksum": "9c1bea67a0d0dc2e42297ea696f6df4f"
@@ -2912,7 +2912,7 @@
       "checksum": "f686a599bf6a77e2094c43712b1a331b"
     },
     "R/map_utils.R": {
-      "checksum": "5f538ebb68e6b8bddc6f2bca3291a22e"
+      "checksum": "9b4e13037db8058ebeb17572b83b0303"
     },
     "R/rwgps_utils.R": {
       "checksum": "b28394b3c9c29074ce18e05749f2559f"
