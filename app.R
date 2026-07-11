@@ -1,4 +1,4 @@
-# GPX Social Mapper ---------------------------------------------------
+# Bike Cartographer ---------------------------------------------------
 # Import a GPX file, style it on an interactive leaflet map, and export
 # the map as a PNG sized for common social media formats.
 #
@@ -26,6 +26,17 @@ html { scrollbar-gutter: stable; }
   color: #555555;
   font-size: 0.85em;
   margin-top: 4px;
+}
+.well {
+  background-color: #f6f4fb;
+  border: 1px solid #e4ddf3;
+  border-radius: 0.5rem;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
+}
+.leaflet-container { border-radius: 6px; }
+.control-label,
+.shiny-input-container label {
+  font-weight: bold;
 }
 "
 
@@ -75,16 +86,32 @@ map_scaler_js <- "
 })();
 "
 
+# Bootstrap 5 theme (bslib): the Cosmo Bootswatch preset (clean, flat,
+# light) with a purple accent.
+app_theme <- bslib::bs_theme(
+  version = 5,
+  bootswatch = "cosmo",
+  primary = "#6f42c1"
+)
+
 ui <- fluidPage(
-  title = "GPX Social Mapper",
+  title = "Bike Cartographer",
+  theme = app_theme,
   tags$head(
     tags$style(HTML(app_css)),
     tags$script(HTML(map_scaler_js))
   ),
-  titlePanel("GPX Social Mapper"),
+  titlePanel("Bike Cartographer"),
   sidebarLayout(
     sidebarPanel(
       width = 3,
+      actionButton(
+        "help",
+        "How to use this app",
+        width = "100%",
+        class = "btn-info"
+      ),
+      hr(),
       fileInput(
         "gpx_file",
         "GPX file",
@@ -244,6 +271,75 @@ warn_if_stadia_keyless <- function(basemap_id) {
   invisible(NULL)
 }
 
+#' Build the "how to use" guide modal
+#'
+#' Returns the `modalDialog` shown when the user clicks the help button.
+#' Kept as a top-level helper so `server()` stays thin.
+#'
+#' @return A `shiny::modalDialog`.
+usage_guide_modal <- function() {
+  step <- function(title, ...) tags$li(tags$strong(title), " ", ...)
+  modalDialog(
+    title = "How to use Bike Cartographer",
+    easyClose = TRUE,
+    size = "l",
+    footer = modalButton("Got it"),
+    tags$p(
+      "Turn a GPS route into a clean map image sized for social media, ",
+      "in five steps:"
+    ),
+    tags$ol(
+      step(
+        "Upload a GPX file.",
+        "Use the GPX file control to choose a .gpx export from Strava, ",
+        "Ride with GPS, Garmin, Komoot, and the like. Tracks draw as ",
+        "solid lines, routes as dashed lines, and named waypoints as ",
+        "labelled markers."
+      ),
+      step(
+        "Pick a basemap.",
+        "Choose the map style. Standard styles need no setup; ",
+        "Thunderforest and Stadia styles appear only when their API key ",
+        "is configured on the server."
+      ),
+      step(
+        "Style the route.",
+        "Set the marker icon for named waypoints, the track colour, and ",
+        "the line weight."
+      ),
+      step(
+        "Add an elevation profile (optional).",
+        "Leave the Elevation profile box ticked to overlay a distance and ",
+        "climb chart read from the GPX elevations, and use the size ",
+        "slider to scale it. Files without elevation data skip the panel."
+      ),
+      step(
+        "Choose an export size and download.",
+        "Pick a platform preset such as Instagram, Story, or X. The ",
+        "preview reshapes to match exactly what the image will look like. ",
+        "Choose 2x density for a sharper retina file, then click Export ",
+        "PNG."
+      )
+    ),
+    tags$hr(),
+    tags$p(tags$strong("Good to know")),
+    tags$ul(
+      tags$li(
+        "What you see is what you get: the on-screen preview matches the ",
+        "framing and elevation panel of the exported PNG."
+      ),
+      tags$li(
+        "Zoom and layer controls are hidden in the export; map ",
+        "attribution is kept, as tile providers require."
+      ),
+      tags$li(
+        "If a basemap needs an API key that is not set, the app falls ",
+        "back to OpenStreetMap."
+      )
+    )
+  )
+}
+
 server <- function(input, output, session) {
   for (note in hidden_basemap_notes()) {
     showNotification(note, type = "message", duration = 12)
@@ -254,6 +350,10 @@ server <- function(input, output, session) {
 
   observeEvent(input$gpx_file, {
     handle_gpx_upload(input$gpx_file, gpx_layers, gpx_label)
+  })
+
+  observeEvent(input$help, {
+    showModal(usage_guide_modal())
   })
 
   selected_preset <- reactive({

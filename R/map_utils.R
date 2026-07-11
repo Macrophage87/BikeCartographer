@@ -118,7 +118,7 @@ build_gpx_map <- function(gpx = NULL,
   # snapping the fit is scale-invariant, so identical aspect ratios (the
   # preview matches the export size) produce identical framing.
   map <- leaflet::leaflet(
-    options = leaflet::leafletOptions(zoomSnap = 0)
+    options = leaflet::leafletOptions(zoomSnap = 0, zoomControl = FALSE)
   )
   map <- add_basemap_tiles(map, basemap_id)
 

@@ -2888,7 +2888,7 @@
   },
   "files": {
     "app.R": {
-      "checksum": "10820ade65390441196e3cd7c41be862"
+      "checksum": "08e3d17aaaf0f95bba9755ae7067a5c5"
     },
     "download": {
       "checksum": "9c1bea67a0d0dc2e42297ea696f6df4f"
@@ -2897,10 +2897,10 @@
       "checksum": "37fa9f8ffc1897aeb5e5b831b70a9b56"
     },
     "README.md": {
-      "checksum": "794a53e7c37f17dfdc2091039b695dbb"
+      "checksum": "dfa3a9d6a41eaf6d7d71276f683dac78"
     },
     "R/basemap_utils.R": {
-      "checksum": "8bf21bc36eb14c72f283b53555939063"
+      "checksum": "eaf442463b438fda2c56c784b5bac590"
     },
     "R/elevation_utils.R": {
       "checksum": "dff84f383e4866eaeb60666367b1456e"
@@ -2912,7 +2912,7 @@
       "checksum": "f686a599bf6a77e2094c43712b1a331b"
     },
     "R/map_utils.R": {
-      "checksum": "2c6ea58f13242ac4abd285f73e716de0"
+      "checksum": "9b4e13037db8058ebeb17572b83b0303"
     },
     "R/rwgps_utils.R": {
       "checksum": "b28394b3c9c29074ce18e05749f2559f"
